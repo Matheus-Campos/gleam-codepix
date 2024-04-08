@@ -1,3 +1,6 @@
+import gleam/dynamic.{
+  type Dynamic, bit_array, field, float, optional_field, string,
+}
 import gleam/option.{type Option, None}
 import birl.{type Time}
 import ids/uuid
@@ -62,4 +65,29 @@ fn get_status_string(status: TransactionStatus) -> String {
     TransactionConfirmed -> "confirmed"
     TransactionError -> "error"
   }
+}
+
+pub fn get_transaction_return_type() -> fn(Dynamic) ->
+  Result(a, dynamic.DecodeErrors) {
+  todo
+}
+
+type TransactionRow =
+  #(
+    BitArray,
+    BitArray,
+    BitArray,
+    Float,
+    BitArray,
+    String,
+    String,
+    String,
+    String,
+    String,
+  )
+
+pub fn from_row(
+  row: TransactionRow,
+) -> Result(Transaction, dynamic.DecodeErrors) {
+  todo
 }
