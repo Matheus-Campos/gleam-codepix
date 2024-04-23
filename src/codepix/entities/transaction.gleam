@@ -1,22 +1,22 @@
+import birl.{type Time}
+import codepix/helpers/database_helpers.{type Timestamp, timestamp}
+import codepix/helpers/uuid_helpers
 import gleam/dynamic.{
   type DecodeError, type DecodeErrors, type Decoder, type Dynamic, DecodeError,
   bit_array, element, field, float, optional, optional_field, string,
 }
-import gleam/result.{try, try_recover}
-import gleam/option.{type Option, None, Some}
-import gleam/list
-import gleam/string
-import gleam/int
 import gleam/float
-import birl.{type Time}
-import ids/uuid
-import codepix/helpers/uuid_helpers
-import codepix/helpers/database_helpers.{type Timestamp, timestamp}
+import gleam/int
 import gleam/json.{type Json}
+import gleam/list
+import gleam/option.{type Option, None}
+import gleam/result.{try}
+import gleam/string
+import ids/uuid
 
 pub type Transaction {
   Transaction(
-    id: Option(String),
+    id: String,
     account_from_id: String,
     account_to_id: Option(String),
     amount: Float,
@@ -27,10 +27,13 @@ pub type Transaction {
     created_at: Time,
     updated_at: Time,
   )
+}
+
+pub type CreateTransactionPayload {
   CreateTransactionPayload(
     account_from_id: String,
     amount: Float,
-    pix_key_to_id: String,
+    pix_key: String,
     description: Option(String),
   )
 }
@@ -127,7 +130,7 @@ pub fn from_row(row: Dynamic) -> Result(Transaction, DecodeError) {
   use updated_at <- try(parse_updated_at)
 
   Transaction(
-    id: Some(uuid_helpers.to_string(id_bytes)),
+    id: uuid_helpers.to_string(id_bytes),
     account_from_id: uuid_helpers.to_string(account_from_id),
     account_to_id: option.map(account_to_id, uuid_helpers.to_string),
     amount: amount,
@@ -175,72 +178,92 @@ fn decode_element(
 }
 
 pub fn to_json(transaction: Transaction) -> Json {
-  case transaction {
-    Transaction(
-      id,
-      account_from_id,
-      account_to_id,
-      amount,
-      pix_key_to_id,
-      status,
-      description,
-      cancel_description,
-      created_at,
-      updated_at,
-    ) -> {
-      json.object([
-        #("id", json.nullable(id, json.string)),
-        #("account_from_id", json.string(account_from_id)),
-        #("account_to_id", json.nullable(account_to_id, json.string)),
-        #("amount", json.float(amount)),
-        #("pix_key_to_id", json.string(pix_key_to_id)),
-        #("status", json.string(status)),
-        #("description", json.nullable(description, json.string)),
-        #("cancel_description", json.nullable(cancel_description, json.string)),
-        #("created_at", json.string(birl.to_iso8601(created_at))),
-        #("updated_at", json.string(birl.to_iso8601(updated_at))),
-      ])
-    }
-    _ -> json.object([])
-  }
+  json.object([
+    #("id", json.string(transaction.id)),
+    #("account_from_id", json.string(transaction.account_from_id)),
+    #("account_to_id", json.nullable(transaction.account_to_id, json.string)),
+    #("amount", json.float(transaction.amount)),
+    #("pix_key_to_id", json.string(transaction.pix_key_to_id)),
+    #("status", json.string(transaction.status)),
+    #("description", json.nullable(transaction.description, json.string)),
+    #(
+      "cancel_description",
+      json.nullable(transaction.cancel_description, json.string),
+    ),
+    #("created_at", json.string(birl.to_iso8601(transaction.created_at))),
+    #("updated_at", json.string(birl.to_iso8601(transaction.updated_at))),
+  ])
 }
 
 pub fn from_dynamic_json(json: Dynamic) -> Result(Transaction, DecodeErrors) {
   use id <- try(decode_field(json, "id", string))
   use account_from_id <- try(decode_field(json, "account_from_id", string))
-  use account_to_id <- try(decode_field(json, "account_to_id", string))
+  use account_to_id <- try(decode_optional_field(json, "account_to_id", string))
   use amount <- try(decode_field(json, "amount", float))
   use pix_key_to_id <- try(decode_field(json, "pix_key_to_id", string))
   use status <- try(decode_field(json, "status", string))
-  use description <- try(decode_field(json, "description", string))
-  use cancel_description <- try(decode_field(json, "cancel_description", string))
-  use created_at <- try(decode_field(json, "created_at", string))
-  use updated_at <- try(decode_field(json, "updated_at", string))
+  use description <- try(decode_optional_field(json, "description", string))
+  use cancel_description <- try(decode_optional_field(
+    json,
+    "cancel_description",
+    string,
+  ))
+  use created_at_str <- try(decode_field(json, "created_at", string))
+  use updated_at_str <- try(decode_field(json, "updated_at", string))
 
-  case id {
-    None ->
-      CreateTransactionPayload(
-        account_from_id: account_from_id,
-        amount: amount,
-        description: description,
-        pix_key_to_id: pix_key_to_id,
-      )
-    Some(id_value) -> Transaction()
-  }
+  use created_at <- try(string_to_time(created_at_str, "created_at"))
+  use updated_at <- try(string_to_time(updated_at_str, "updated_at"))
+
+  Ok(Transaction(
+    id: id,
+    account_from_id: account_from_id,
+    account_to_id: account_to_id,
+    amount: amount,
+    pix_key_to_id: pix_key_to_id,
+    status: status,
+    description: description,
+    cancel_description: cancel_description,
+    created_at: created_at,
+    updated_at: updated_at,
+  ))
 }
 
 fn decode_field(
   json: Dynamic,
   field_name: String,
   decoder: Decoder(a),
+) -> Result(a, DecodeErrors) {
+  json
+  |> field(named: field_name, of: decoder)
+}
+
+fn decode_optional_field(
+  json: Dynamic,
+  field_name: String,
+  decoder: Decoder(a),
 ) -> Result(Option(a), DecodeErrors) {
-  let required =
-    json
-    |> field(named: field_name, of: decoder)
-    |> result.map(fn(value) { Some(value) })
-
-  use _ <- try_recover(required)
-
   json
   |> optional_field(named: field_name, of: decoder)
+}
+
+fn string_to_time(t: String, field_name: String) -> Result(Time, DecodeErrors) {
+  t
+  |> birl.parse
+  |> result.replace_error([
+    DecodeError(found: "Invalid timestamp", expected: "Timestamp", path: [
+      field_name,
+    ]),
+  ])
+}
+
+pub fn create_transaction_payload_from_json(
+  json: Dynamic,
+) -> Result(CreateTransactionPayload, DecodeErrors) {
+  dynamic.decode4(
+    CreateTransactionPayload,
+    field("account_from_id", string),
+    field("amount", float),
+    field("pix_key", string),
+    optional_field("description", string),
+  )(json)
 }

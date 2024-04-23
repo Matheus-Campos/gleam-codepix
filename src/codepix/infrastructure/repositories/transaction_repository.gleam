@@ -1,7 +1,10 @@
+import codepix/entities/transaction.{
+  type CreateTransactionPayload, type Transaction,
+}
 import gleam/dynamic
-import gleam/result.{try}
+import gleam/io.{debug}
 import gleam/pgo.{float, nullable, text}
-import codepix/entities/transaction.{type Transaction}
+import gleam/result.{try}
 
 pub type CreateTransactionError {
   DatabaseInsertError
@@ -9,25 +12,25 @@ pub type CreateTransactionError {
 }
 
 pub fn create(
-  transaction: Transaction,
+  create_transaction_payload: CreateTransactionPayload,
   conn: pgo.Connection,
 ) -> Result(Transaction, CreateTransactionError) {
   let sql =
-    "INSERT INTO transactions (account_from_id, amount, pix_key_to_id, status, description) VALUES ($1, $2, $3, $4, $5) RETURNING *;"
+    "INSERT INTO transactions (\"accountFromId\", amount, \"pixKeyToId\", description) VALUES ($1, $2, $3, $4) RETURNING *;"
 
   let insert_transaction =
     sql
     |> pgo.execute(
       conn,
       [
-        text(transaction.account_from_id),
-        float(transaction.amount),
-        text(transaction.pix_key_to_id),
-        text(transaction.status),
-        nullable(text, transaction.description),
+        text(create_transaction_payload.account_from_id),
+        float(create_transaction_payload.amount),
+        text(create_transaction_payload.pix_key),
+        nullable(text, create_transaction_payload.description),
       ],
       dynamic.dynamic,
     )
+    |> debug
     |> result.replace_error(DatabaseInsertError)
 
   use returned <- try(insert_transaction)

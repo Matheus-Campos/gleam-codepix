@@ -1,1 +1,13 @@
 GET http://localhost:8000
+
+###
+
+POST http://localhost:8000/transactions
+Content-Type: application/json
+
+{
+  "account_from_id": "94ca0bc7-1e0b-4b2c-8548-4e0793c0ba5d",
+  "amount": 100.00,
+  "pix_key": "silva.campos.matheus@gmail.com",
+  "description": "Teste"
+}
