@@ -1,12 +1,10 @@
 import birl.{type Time}
-import codepix/helpers/database_helpers.{type Timestamp, timestamp}
+import codepix/helpers/database_helpers.{timestamp, timestamp_to_time}
 import codepix/helpers/uuid_helpers
 import gleam/dynamic.{
   type DecodeError, type DecodeErrors, type Decoder, type Dynamic, DecodeError,
   bit_array, element, field, float, optional, optional_field, string,
 }
-import gleam/float
-import gleam/int
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None}
@@ -145,24 +143,6 @@ pub fn from_row(row: Dynamic) -> Result(Transaction, DecodeError) {
   |> result.map_error(fn(error) {
     DecodeError(expected: error.reason, found: error.value, path: [error.field])
   })
-}
-
-fn timestamp_to_time(stamp: Timestamp) -> Result(Time, Nil) {
-  let date = stamp.0
-  let time = stamp.1
-
-  let date_str =
-    [date.0, date.1, date.2]
-    |> list.map(int.to_string)
-    |> string.join(with: "-")
-
-  let time_str =
-    [int.to_string(time.0), int.to_string(time.1), float.to_string(time.2)]
-    |> string.join(with: ":")
-
-  let formatted_timestamp = date_str <> "T" <> time_str <> "Z"
-
-  birl.parse(formatted_timestamp)
 }
 
 fn decode_element(
