@@ -11,7 +11,7 @@ pub fn find_account_by_pix_key(
   pix_key: String,
 ) -> Result(Account, FindAccountError) {
   let sql =
-    "SELECT acc.* FROM \"pixKeys\" AS p JOIN accounts AS acc ON acc.id = p.account_id WHERE p.key = $1;"
+    "SELECT acc.* FROM \"pixKeys\" AS p JOIN accounts AS acc ON acc.id = p.\"accountId\" WHERE p.key = $1;"
 
   let get_account =
     sql

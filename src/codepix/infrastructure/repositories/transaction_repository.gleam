@@ -12,11 +12,13 @@ pub type CreateTransactionError {
 }
 
 pub fn create(
-  create_transaction_payload: CreateTransactionPayload,
   conn: pgo.Connection,
+  create_transaction_payload: CreateTransactionPayload,
+  account_to_id: String,
+  pix_key_to_id,
 ) -> Result(Transaction, CreateTransactionError) {
   let sql =
-    "INSERT INTO transactions (\"accountFromId\", amount, \"pixKeyToId\", description) VALUES ($1, $2, $3, $4) RETURNING *;"
+    "INSERT INTO transactions (\"accountFromId\", \"accountToId\", amount, \"pixKeyToId\", description) VALUES ($1, $2, $3, $4, $5) RETURNING *;"
 
   let insert_transaction =
     sql
@@ -24,8 +26,9 @@ pub fn create(
       conn,
       [
         text(create_transaction_payload.account_from_id),
+        text(account_to_id),
         float(create_transaction_payload.amount),
-        text(create_transaction_payload.pix_key),
+        text(pix_key_to_id),
         nullable(text, create_transaction_payload.description),
       ],
       dynamic.dynamic,
@@ -48,8 +51,8 @@ pub type FindTransactionError {
 }
 
 pub fn find(
-  transaction_id: String,
   conn: pgo.Connection,
+  transaction_id: String,
 ) -> Result(Transaction, FindTransactionError) {
   let sql = "SELECT * FROM transactions WHERE id = $1;"
 

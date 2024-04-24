@@ -2,12 +2,17 @@ import codepix/context.{type Context}
 import codepix/entities/transaction.{
   type CreateTransactionPayload, type Transaction,
 }
+import codepix/infrastructure/repositories/account_repository
+import codepix/infrastructure/repositories/pix_key_repository
 import codepix/infrastructure/repositories/transaction_repository
-import gleam/result
+import gleam/result.{try}
+import wisp
 
 pub type RegistrationError {
   ValidationError
   QueryError
+  PixKeyNotFound
+  AccountNotFound
 }
 
 pub type FindError {
@@ -18,8 +23,31 @@ pub fn create_transaction(
   create_transaction_payload: CreateTransactionPayload,
   context: Context,
 ) -> Result(Transaction, RegistrationError) {
-  create_transaction_payload
-  |> transaction_repository.create(context.db)
+  wisp.log_info("Executing create transaction use case")
+
+  let find_pix_key =
+    pix_key_repository.find_by_key(
+      context.db,
+      create_transaction_payload.pix_key,
+    )
+    |> result.replace_error(PixKeyNotFound)
+
+  let find_account =
+    context.db
+    |> account_repository.find_account_by_pix_key(
+      create_transaction_payload.pix_key,
+    )
+    |> result.replace_error(PixKeyNotFound)
+
+  use pix_key <- try(find_pix_key)
+  use account_to <- try(find_account)
+
+  context.db
+  |> transaction_repository.create(
+    create_transaction_payload,
+    pix_key.id,
+    account_to.id,
+  )
   |> result.replace_error(QueryError)
 }
 
@@ -27,7 +55,7 @@ pub fn find_transaction_by_id(
   id: String,
   ctx: Context,
 ) -> Result(Transaction, FindError) {
-  id
-  |> transaction_repository.find(ctx.db)
+  ctx.db
+  |> transaction_repository.find(id)
   |> result.replace_error(TransactionNotFound)
 }

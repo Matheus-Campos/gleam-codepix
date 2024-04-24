@@ -7,16 +7,15 @@ import gleam/dynamic.{
 }
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option}
 import gleam/result.{try}
 import gleam/string
-import ids/uuid
 
 pub type Transaction {
   Transaction(
     id: String,
     account_from_id: String,
-    account_to_id: Option(String),
+    account_to_id: String,
     amount: Float,
     pix_key_to_id: String,
     status: String,
@@ -49,29 +48,6 @@ pub type ValidationError {
   InvalidField(field: String, value: String, reason: String)
 }
 
-pub fn new(
-  from account_from_id: String,
-  amount amount: Float,
-  to_key pix_key_to_id: String,
-  description description: Option(String),
-) -> Result(Transaction, ValidationError) {
-  let assert Ok(id) = uuid.generate_v4()
-
-  Transaction(
-    id: id,
-    account_from_id: account_from_id,
-    account_to_id: None,
-    amount: amount,
-    pix_key_to_id: pix_key_to_id,
-    status: get_status_string(TransactionPending),
-    description: description,
-    cancel_description: None,
-    created_at: birl.now(),
-    updated_at: birl.now(),
-  )
-  |> is_valid
-}
-
 pub fn is_valid(
   transaction: Transaction,
 ) -> Result(Transaction, ValidationError) {
@@ -87,7 +63,7 @@ pub fn is_valid(
   }
 }
 
-fn get_status_string(status: TransactionStatus) -> String {
+pub fn get_status_string(status: TransactionStatus) -> String {
   case status {
     TransactionPending -> "pending"
     TransactionCompleted -> "completed"
@@ -99,7 +75,7 @@ fn get_status_string(status: TransactionStatus) -> String {
 pub fn from_row(row: Dynamic) -> Result(Transaction, DecodeError) {
   use id_bytes <- try(decode_element(row, 0, bit_array))
   use account_from_id <- try(decode_element(row, 1, bit_array))
-  use account_to_id <- try(decode_element(row, 2, optional(bit_array)))
+  use account_to_id <- try(decode_element(row, 2, bit_array))
   use amount <- try(decode_element(row, 3, float))
   use pix_key_to_id <- try(decode_element(row, 4, bit_array))
   use status <- try(decode_element(row, 5, string))
@@ -130,7 +106,7 @@ pub fn from_row(row: Dynamic) -> Result(Transaction, DecodeError) {
   Transaction(
     id: uuid_helpers.to_string(id_bytes),
     account_from_id: uuid_helpers.to_string(account_from_id),
-    account_to_id: option.map(account_to_id, uuid_helpers.to_string),
+    account_to_id: uuid_helpers.to_string(account_to_id),
     amount: amount,
     pix_key_to_id: uuid_helpers.to_string(pix_key_to_id),
     status: status,
@@ -161,7 +137,7 @@ pub fn to_json(transaction: Transaction) -> Json {
   json.object([
     #("id", json.string(transaction.id)),
     #("account_from_id", json.string(transaction.account_from_id)),
-    #("account_to_id", json.nullable(transaction.account_to_id, json.string)),
+    #("account_to_id", json.string(transaction.account_to_id)),
     #("amount", json.float(transaction.amount)),
     #("pix_key_to_id", json.string(transaction.pix_key_to_id)),
     #("status", json.string(transaction.status)),
@@ -178,7 +154,7 @@ pub fn to_json(transaction: Transaction) -> Json {
 pub fn from_dynamic_json(json: Dynamic) -> Result(Transaction, DecodeErrors) {
   use id <- try(decode_field(json, "id", string))
   use account_from_id <- try(decode_field(json, "account_from_id", string))
-  use account_to_id <- try(decode_optional_field(json, "account_to_id", string))
+  use account_to_id <- try(decode_field(json, "account_to_id", string))
   use amount <- try(decode_field(json, "amount", float))
   use pix_key_to_id <- try(decode_field(json, "pix_key_to_id", string))
   use status <- try(decode_field(json, "status", string))
