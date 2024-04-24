@@ -136,36 +136,36 @@ fn decode_element(
 pub fn to_json(transaction: Transaction) -> Json {
   json.object([
     #("id", json.string(transaction.id)),
-    #("account_from_id", json.string(transaction.account_from_id)),
-    #("account_to_id", json.string(transaction.account_to_id)),
+    #("accountFromId", json.string(transaction.account_from_id)),
+    #("accountToId", json.string(transaction.account_to_id)),
     #("amount", json.float(transaction.amount)),
-    #("pix_key_to_id", json.string(transaction.pix_key_to_id)),
+    #("pixKeyToId", json.string(transaction.pix_key_to_id)),
     #("status", json.string(transaction.status)),
     #("description", json.nullable(transaction.description, json.string)),
     #(
-      "cancel_description",
+      "cancelDescription",
       json.nullable(transaction.cancel_description, json.string),
     ),
-    #("created_at", json.string(birl.to_iso8601(transaction.created_at))),
-    #("updated_at", json.string(birl.to_iso8601(transaction.updated_at))),
+    #("createdAt", json.string(birl.to_iso8601(transaction.created_at))),
+    #("updatedAt", json.string(birl.to_iso8601(transaction.updated_at))),
   ])
 }
 
 pub fn from_dynamic_json(json: Dynamic) -> Result(Transaction, DecodeErrors) {
   use id <- try(decode_field(json, "id", string))
-  use account_from_id <- try(decode_field(json, "account_from_id", string))
-  use account_to_id <- try(decode_field(json, "account_to_id", string))
+  use account_from_id <- try(decode_field(json, "accountFromId", string))
+  use account_to_id <- try(decode_field(json, "accountToId", string))
   use amount <- try(decode_field(json, "amount", float))
-  use pix_key_to_id <- try(decode_field(json, "pix_key_to_id", string))
+  use pix_key_to_id <- try(decode_field(json, "pixKeyToId", string))
   use status <- try(decode_field(json, "status", string))
   use description <- try(decode_optional_field(json, "description", string))
   use cancel_description <- try(decode_optional_field(
     json,
-    "cancel_description",
+    "cancelDescription",
     string,
   ))
-  use created_at_str <- try(decode_field(json, "created_at", string))
-  use updated_at_str <- try(decode_field(json, "updated_at", string))
+  use created_at_str <- try(decode_field(json, "createdAt", string))
+  use updated_at_str <- try(decode_field(json, "updatedAt", string))
 
   use created_at <- try(string_to_time(created_at_str, "created_at"))
   use updated_at <- try(string_to_time(updated_at_str, "updated_at"))
@@ -217,9 +217,9 @@ pub fn create_transaction_payload_from_json(
 ) -> Result(CreateTransactionPayload, DecodeErrors) {
   dynamic.decode4(
     CreateTransactionPayload,
-    field("account_from_id", string),
+    field("accountFromId", string),
     field("amount", float),
-    field("pix_key", string),
+    field("pixKey", string),
     optional_field("description", string),
   )(json)
 }

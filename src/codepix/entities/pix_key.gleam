@@ -78,11 +78,7 @@ fn check_invalid_status(status: String) -> Result(Nil, ValidationError) {
 pub type PixKeyTuple =
   #(BitArray, String, String, BitArray, String, Timestamp, Timestamp)
 
-pub fn get_pix_key_return_type() -> Decoder(PixKeyTuple) {
-  pix_key_tuple_decoder
-}
-
-fn pix_key_tuple_decoder(dyn: Dynamic) -> Result(PixKeyTuple, DecodeErrors) {
+pub fn pix_key_tuple_decoder(dyn: Dynamic) -> Result(PixKeyTuple, DecodeErrors) {
   let decode_tuple_element = fn(position: Int, decoder: Decoder(a)) {
     decode_element(dyn, position, decoder)
   }

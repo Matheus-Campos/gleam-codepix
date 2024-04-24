@@ -26,10 +26,8 @@ pub fn create_transaction(
   wisp.log_info("Executing create transaction use case")
 
   let find_pix_key =
-    pix_key_repository.find_by_key(
-      context.db,
-      create_transaction_payload.pix_key,
-    )
+    context.db
+    |> pix_key_repository.find_by_key(create_transaction_payload.pix_key)
     |> result.replace_error(PixKeyNotFound)
 
   let find_account =
@@ -45,8 +43,8 @@ pub fn create_transaction(
   context.db
   |> transaction_repository.create(
     create_transaction_payload,
-    pix_key.id,
     account_to.id,
+    pix_key.id,
   )
   |> result.replace_error(QueryError)
 }

@@ -39,14 +39,14 @@ pub fn new(
 }
 
 pub type AccountTuple =
-  #(BitArray, String, String, BitArray, Timestamp, Timestamp)
+  #(BitArray, String, BitArray, String, Timestamp, Timestamp)
 
 pub fn get_account_return_type() -> Decoder(AccountTuple) {
   dynamic.tuple6(
     dynamic.bit_array,
     dynamic.string,
-    dynamic.string,
     dynamic.bit_array,
+    dynamic.string,
     timestamp(),
     timestamp(),
   )
@@ -63,8 +63,8 @@ pub fn from_dynamic_tuple(account_tuple: AccountTuple) -> Result(Account, Nil) {
   Ok(Account(
     id: uuid_helpers.to_string(account_tuple.0),
     owner_name: account_tuple.1,
-    number: account_tuple.2,
-    bank_id: uuid_helpers.to_string(account_tuple.3),
+    bank_id: uuid_helpers.to_string(account_tuple.2),
+    number: account_tuple.3,
     created_at: created_at,
     updated_at: updated_at,
   ))
