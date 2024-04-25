@@ -4,10 +4,11 @@ import codepix/helpers/database_helpers.{
 }
 import codepix/helpers/uuid_helpers
 import gleam/dynamic.{
-  type DecodeErrors, type Decoder, type Dynamic, bit_array, element, string,
+  type DecodeErrors, type Decoder, type Dynamic, bit_array, element, field,
+  string,
 }
+import gleam/json.{type Json}
 import gleam/result.{try}
-import ids/uuid
 
 pub type PixKey {
   PixKey(
@@ -21,38 +22,9 @@ pub type PixKey {
   )
 }
 
-pub type PixKeyKind {
-  EmailKind
-  CpfKind
-}
-
 pub type ValidationError {
   InvalidKind
   InvalidStatus
-}
-
-pub fn new(
-  kind: PixKeyKind,
-  account_id: String,
-  key: String,
-) -> Result(PixKey, ValidationError) {
-  let kind = case kind {
-    EmailKind -> "email"
-    CpfKind -> "cpf"
-  }
-
-  let assert Ok(id) = uuid.generate_v4()
-
-  PixKey(
-    id: id,
-    kind: kind,
-    key: key,
-    account_id: account_id,
-    status: "active",
-    created_at: birl.now(),
-    updated_at: birl.now(),
-  )
-  |> is_valid
 }
 
 pub fn is_valid(key: PixKey) -> Result(PixKey, ValidationError) {
@@ -115,4 +87,31 @@ pub fn from_tuple(tuple: PixKeyTuple) -> Result(PixKey, Nil) {
     created_at: created_at,
     updated_at: updated_at,
   ))
+}
+
+pub fn to_json(pix_key: PixKey) -> Json {
+  json.object([
+    #("id", json.string(pix_key.id)),
+    #("kind", json.string(pix_key.kind)),
+    #("key", json.string(pix_key.key)),
+    #("accountId", json.string(pix_key.account_id)),
+    #("status", json.string(pix_key.status)),
+    #("createdAt", json.string(birl.to_iso8601(pix_key.created_at))),
+    #("updatedAt", json.string(birl.to_iso8601(pix_key.updated_at))),
+  ])
+}
+
+pub type CreatePixKeyPayload {
+  CreatePixKeyPayload(kind: String, key: String, account_id: String)
+}
+
+pub fn create_pix_key_payload_from_json(
+  json: Dynamic,
+) -> Result(CreatePixKeyPayload, DecodeErrors) {
+  dynamic.decode3(
+    CreatePixKeyPayload,
+    field("kind", string),
+    field("key", string),
+    field("accountId", string),
+  )(json)
 }
