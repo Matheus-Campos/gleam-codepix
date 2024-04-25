@@ -25,11 +25,6 @@ pub fn create_transaction(
 ) -> Result(Transaction, RegistrationError) {
   wisp.log_info("Executing create transaction use case")
 
-  let find_pix_key =
-    context.db
-    |> pix_key_repository.find_by_key(create_transaction_payload.pix_key)
-    |> result.replace_error(PixKeyNotFound)
-
   let find_account =
     context.db
     |> account_repository.find_account_by_pix_key(
@@ -37,8 +32,13 @@ pub fn create_transaction(
     )
     |> result.replace_error(PixKeyNotFound)
 
-  use pix_key <- try(find_pix_key)
+  let find_pix_key =
+    context.db
+    |> pix_key_repository.find_by_key(create_transaction_payload.pix_key)
+    |> result.replace_error(PixKeyNotFound)
+
   use account_to <- try(find_account)
+  use pix_key <- try(find_pix_key)
 
   context.db
   |> transaction_repository.create(
@@ -47,13 +47,4 @@ pub fn create_transaction(
     pix_key.id,
   )
   |> result.replace_error(QueryError)
-}
-
-pub fn find_transaction_by_id(
-  id: String,
-  ctx: Context,
-) -> Result(Transaction, FindError) {
-  ctx.db
-  |> transaction_repository.find(id)
-  |> result.replace_error(TransactionNotFound)
 }
