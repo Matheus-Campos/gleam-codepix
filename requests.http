@@ -7,7 +7,15 @@ Content-Type: application/json
 
 {
   "accountFromId": "56f9caec-d448-4e46-bd87-e0f52aaf8be2",
-  "amount": 100.00,
+  "amount": 10.00,
   "pixKey": "silva.campos.matheus@gmail.com",
   "description": "Teste"
 }
+
+###
+
+POST http://localhost:8000/transactions/0372779E-4489-4FD2-9F25-254CDCA53447/confirm
+
+###
+
+POST http://localhost:8000/transactions/0372779E-4489-4FD2-9F25-254CDCA53447/complete

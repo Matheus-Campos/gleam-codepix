@@ -9,14 +9,9 @@ import gleam/result.{try}
 import wisp
 
 pub type RegistrationError {
-  ValidationError
   QueryError
   PixKeyNotFound
   AccountNotFound
-}
-
-pub type FindError {
-  TransactionNotFound
 }
 
 pub fn create_transaction(
@@ -30,7 +25,7 @@ pub fn create_transaction(
     |> account_repository.find_account_by_pix_key(
       create_transaction_payload.pix_key,
     )
-    |> result.replace_error(PixKeyNotFound)
+    |> result.replace_error(AccountNotFound)
 
   let find_pix_key =
     context.db
@@ -47,4 +42,26 @@ pub fn create_transaction(
     pix_key.id,
   )
   |> result.replace_error(QueryError)
+}
+
+pub type UpdateTransactionError {
+  TransactionNotFound
+}
+
+pub fn confirm_transaction(
+  context: Context,
+  id: String,
+) -> Result(Transaction, UpdateTransactionError) {
+  context.db
+  |> transaction_repository.confirm(id)
+  |> result.replace_error(TransactionNotFound)
+}
+
+pub fn complete_transaction(
+  context: Context,
+  id: String,
+) -> Result(Transaction, UpdateTransactionError) {
+  context.db
+  |> transaction_repository.complete(id)
+  |> result.replace_error(TransactionNotFound)
 }

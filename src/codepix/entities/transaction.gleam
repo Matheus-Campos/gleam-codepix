@@ -42,7 +42,7 @@ pub type TransactionStatus {
   TransactionError
 }
 
-const transaction_statuses = ["pending", "confirmed", "status", "error"]
+const transaction_statuses = ["pending", "confirmed", "complete", "error"]
 
 pub type ValidationError {
   InvalidField(field: String, value: String, reason: String)
