@@ -19,3 +19,14 @@ POST http://localhost:8000/transactions/0372779E-4489-4FD2-9F25-254CDCA53447/con
 ###
 
 POST http://localhost:8000/transactions/0372779E-4489-4FD2-9F25-254CDCA53447/complete
+
+###
+
+POST http://localhost:8000/pixKeys
+Content-Type: application/json
+
+{
+  "kind": "phone",
+  "key": "+551123456789",
+  "accountId": "94ca0bc7-1e0b-4b2c-8548-4e0793c0ba5d"
+}

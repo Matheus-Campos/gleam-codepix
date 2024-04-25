@@ -29,3 +29,21 @@ pub fn create_pix_key(
 
   pix_key.from_tuple(row)
 }
+
+pub fn find_pix_key(
+  conn: pgo.Connection,
+  kind: String,
+  key: String,
+) -> Result(PixKey, Nil) {
+  let sql = "SELECT * FROM \"pixKeys\" WHERE kind = $1 AND key = $2"
+
+  let find_key =
+    sql
+    |> pgo.execute(conn, [text(kind), text(key)], pix_key_tuple_decoder)
+    |> result.nil_error
+
+  use returned <- try(find_key)
+  let assert [row] = returned.rows
+
+  pix_key.from_tuple(row)
+}
